@@ -50,7 +50,14 @@ RDFデータソースに対して SPARQL クエリを安全に組み立て、実
 ## インストール
 
 ```bash
+# npm
+npm install @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
+
+# pnpm
 pnpm add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
+
+# yarn
+yarn add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
 ```
 
 ## 基本的な使用例
