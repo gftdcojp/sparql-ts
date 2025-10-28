@@ -1,18 +1,18 @@
 # @gftdcojp/sparql-ts
 
-RDFデータソースに対して SPARQL クエリを安全に組み立て、実行し、セマンティックに正しい（SHACL準拠の）アプリケーション向けオブジェクトとして受け取るための TypeScript ファミリーです。
+A TypeScript family for safely building, executing SPARQL queries against RDF data sources, and receiving semantically correct (SHACL-compliant) objects for applications.
 
-## 概要
+## Overview
 
-`sparql-ts` は、RDFデータを扱うアプリケーション開発を支援するためのTypeScriptライブラリ群です。以下の3つのパッケージから構成されます：
+`sparql-ts` is a collection of TypeScript libraries that support application development with RDF data. It consists of three packages:
 
-- **[@gftdcojp/sparql-ts-builder](./packages/sparql-ts-builder/)**: SPARQLクエリの型安全な構築
-- **[@gftdcojp/sparql-ts-executor](./packages/sparql-ts-executor/)**: SPARQLクエリの実行
-- **[@gftdcojp/sparql-ts-shaper](./packages/sparql-ts-shaper/)**: 結果のSHACL検証とDTO化
+- **[@gftdcojp/sparql-ts-builder](./packages/sparql-ts-builder/)**: Type-safe SPARQL query building
+- **[@gftdcojp/sparql-ts-executor](./packages/sparql-ts-executor/)**: SPARQL query execution
+- **[@gftdcojp/sparql-ts-shaper](./packages/sparql-ts-shaper/)**: SHACL validation and DTO mapping
 
-各パッケージは明確な責任分離を持ち、SOLID原則に基づいた設計になっています。
+Each package has clear separation of responsibilities and is designed based on SOLID principles.
 
-## アーキテクチャ
+## Architecture
 
 ```
           +-------------------------------------+
@@ -43,11 +43,11 @@ RDFデータソースに対して SPARQL クエリを安全に組み立て、実
           |   1) buildQuads(row)                |
           |   2) SHACL validate (resourcebox)   |
           |   3) mapToObject(row) => DTO        |
-          | => Promise<T[]> (信頼できる配列)     |
+          | => Promise<T[]> (reliable array)    |
           +-------------------------------------+
 ```
 
-## インストール
+## Installation
 
 ```bash
 # npm
@@ -60,7 +60,7 @@ pnpm add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/spar
 yarn add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
 ```
 
-## 基本的な使用例
+## Basic Usage Example
 
 ```typescript
 import { SparqlBuilder, iri, v, litStr } from '@gftdcojp/sparql-ts-builder';
@@ -68,7 +68,7 @@ import { execQuery } from '@gftdcojp/sparql-ts-executor';
 import { shapeAndMapAll } from '@gftdcojp/sparql-ts-shaper';
 import { QueryEngine } from '@comunica/query-sparql';
 
-// 1. クエリ構築
+// 1. Build query
 const builder = new SparqlBuilder()
   .prefix('ex', 'http://example.org/schema#')
   .selectVars([v('id'), v('name'), v('age')])
@@ -77,12 +77,12 @@ const builder = new SparqlBuilder()
   .whereTriple(v('id'), iri('http://example.org/schema#age'), v('age'))
   .limit(10);
 
-// 2. 出力仕様設定（SHACL検証とDTOマッピング）
+// 2. Set output specification (SHACL validation and DTO mapping)
 builder.setOutputSpec({
   shape: 'http://example.org/PersonShape',
   focusNodeVar: 'id',
   buildQuads: (binding) => [
-    // RDFグラフを復元するロジック
+    // Logic to reconstruct RDF graph
   ],
   mapToObject: (binding) => ({
     id: binding.get('id')!.value,
@@ -91,75 +91,75 @@ builder.setOutputSpec({
   }),
 });
 
-// 3. クエリ実行
+// 3. Execute query
 const engine = new QueryEngine();
 const rows = await execQuery(builder, engine, ['http://example.org/data.ttl']);
 
-// 4. SHACL検証とDTO化
+// 4. SHACL validation and DTO mapping
 const persons = await shapeAndMapAll(builder, rows);
-console.log(persons); // Person[] - 型安全でSHACL準拠
+console.log(persons); // Person[] - type-safe and SHACL-compliant
 ```
 
-## パッケージ詳細
+## Package Details
 
 ### @gftdcojp/sparql-ts-builder
 
-SPARQLクエリの型安全な構築を提供します。
+Provides type-safe SPARQL query building.
 
-**主要API:**
-- `SparqlBuilder`: fluent APIによるクエリ構築
+**Main APIs:**
+- `SparqlBuilder`: Fluent API for query construction
 - RDF Term helpers: `iri()`, `v()`, `litStr()`, etc.
-- `OutputSpec<T>`: 出力仕様の定義
+- `OutputSpec<T>`: Output specification definition
 
 ### @gftdcojp/sparql-ts-executor
 
-SPARQLクエリの実行を提供します。
+Provides SPARQL query execution.
 
-**主要API:**
-- `execQuery(builder, engine, sources)`: クエリ実行
-- `collectRows(builder, engine, sources)`: 全結果を配列として取得
+**Main APIs:**
+- `execQuery(builder, engine, sources)`: Query execution
+- `collectRows(builder, engine, sources)`: Get all results as array
 
 ### @gftdcojp/sparql-ts-shaper
 
-クエリ結果のSHACL検証とDTO化を提供します。
+Provides SHACL validation and DTO mapping of query results.
 
-**主要API:**
-- `shapeAndMapAll(builder, rows)`: 全結果の検証・マッピング
-- `shapeAndMapOne(builder, row)`: 単一結果の検証・マッピング
+**Main APIs:**
+- `shapeAndMapAll(builder, rows)`: Validation and mapping of all results
+- `shapeAndMapOne(builder, row)`: Validation and mapping of single result
 
-## 開発
+## Development
 
 ```bash
-# 依存関係インストール
+# Install dependencies
 pnpm install
 
-# 全パッケージビルド
+# Build all packages
 pnpm build
 
-# 全パッケージテスト
+# Test all packages
 pnpm test
 
-# 個別パッケージの操作
+# Individual package operations
 cd packages/sparql-ts-builder
 pnpm test
 pnpm build
 ```
 
-## 設計原則
+## Design Principles
 
-- **責任分離**: 各パッケージは単一の責任のみを担う
-- **型安全性**: TypeScriptの型システムを最大限活用
-- **テスト容易性**: 各層が独立してテスト可能
-- **拡張性**: 新しい機能の追加が容易
+- **Separation of Concerns**: Each package has a single responsibility
+- **Type Safety**: Maximum utilization of TypeScript's type system
+- **Testability**: Each layer can be tested independently
+- **Extensibility**: Easy to add new features
 
-## 依存関係
+## Dependencies
 
-- `sparqljs`: SPARQL AST操作
-- `n3`: RDF Term操作
-- `@rdfjs/types`: RDF/JS標準型定義
-- `@comunica/query-sparql`: SPARQL実行エンジン
-- `@gftdcojp/resourcebox`: SHACL検証（将来）
+- `sparqljs`: SPARQL AST manipulation
+- `n3`: RDF Term operations
+- `@rdfjs/types`: RDF/JS standard type definitions
+- `@comunica/query-sparql`: SPARQL execution engine
+- `@gftdcojp/resourcebox`: SHACL validation (future)
 
-## ライセンス
+## License
 
-このプロジェクトは [gftdco.jp](https://gftdco.jp) によって管理されています。
+This project is maintained by [gftdco.jp](https://gftdco.jp).

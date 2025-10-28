@@ -1,25 +1,30 @@
 {
   "name": "@gftdcojp/sparql-ts",
   "version": "0.1.0",
-  "description": "RDFデータソースに対してSPARQLクエリを安全に組み立て、実行し、SHACL準拠のアプリケーション向けオブジェクトとして受け取るためのTypeScriptファミリー",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "description": "TypeScript family for safely building, executing SPARQL queries against RDF data sources, and receiving semantically correct (SHACL-compliant) objects for applications",
   "scripts": {
-    "build": "pnpm --recursive --parallel run build",
-    "test": "pnpm --recursive --parallel run test",
-    "lint": "pnpm --recursive --parallel run lint",
-    "clean": "pnpm --recursive --parallel run clean && rm -rf node_modules"
+    "build": "echo 'Meta package - no build needed'",
+    "test": "echo 'Meta package - no tests'",
+    "lint": "echo 'Meta package - no lint'",
+    "clean": "echo 'Meta package - no clean'"
   },
-  "devDependencies": {
-    "@biomejs/biome": "^1.8.3",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.0.0"
+  "peerDependencies": {
+    "@gftdcojp/sparql-ts-builder": "^0.1.0",
+    "@gftdcojp/sparql-ts-executor": "^0.1.0",
+    "@gftdcojp/sparql-ts-shaper": "^0.1.0"
   },
-  "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0"
+  "keywords": [
+    "sparql",
+    "rdf",
+    "typescript",
+    "shacl",
+    "semantic-web",
+    "linked-data"
+  ],
+  "author": "gftdco.jp",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gftdcojp/sparql-ts"
+  }
 }
