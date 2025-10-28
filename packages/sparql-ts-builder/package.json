@@ -1,0 +1,36 @@
+{
+  "name": "@gftdcojp/sparql-ts-builder",
+  "version": "0.1.0",
+  "description": "TypeScriptからSPARQLクエリを安全に組み立てるためのfluent API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@rdfjs/types": "^1.1.0",
+    "n3": "^1.17.3",
+    "sparqljs": "^3.7.1"
+  },
+  "devDependencies": {
+    "@types/n3": "^1.26.1",
+    "@types/node": "^22.0.0",
+    "@types/sparqljs": "^3.1.7",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}
