@@ -10,19 +10,18 @@ import { iri, v } from '@gftdcojp/sparql-ts-builder';
 
 // Comunicaのモック
 vi.mock('@comunica/query-sparql', () => ({
-  QueryEngine: vi.fn().mockImplementation(() => ({
-    queryBindings: vi.fn(),
-  })),
+  QueryEngine: vi.fn(),
 }));
 
 describe('executor', () => {
-  let mockEngine: QueryEngine;
+  let mockEngine: any;
   let mockQueryBindings: any;
 
   beforeEach(() => {
     mockQueryBindings = vi.fn();
-    mockEngine = new QueryEngine();
-    (mockEngine as any).queryBindings = mockQueryBindings;
+    mockEngine = {
+      queryBindings: mockQueryBindings,
+    };
   });
 
   describe('execQuery', () => {
@@ -61,6 +60,72 @@ describe('executor', () => {
       expect(rows[1].get('name')?.value).toBe('Bob');
     });
 
+    it('クエリを実行し、stringキーを持つバインディングを処理する', async () => {
+      // stringキーのモックデータを準備
+      const mockBindings = [
+        new Map([['name', { termType: 'Literal', value: 'Alice' }]]),
+        new Map([['age', { termType: 'Literal', value: '30' }]]),
+      ];
+
+      const mockStream = (async function* () {
+        for (const binding of mockBindings) {
+          yield binding;
+        }
+      })();
+
+      mockQueryBindings.mockResolvedValue(mockStream);
+
+      const builder = new SparqlBuilder()
+        .selectVars([v('name'), v('age')])
+        .whereTriple(v('person'), iri('http://example.org/name'), v('name'));
+
+      const sources = ['http://example.org/data.ttl'];
+      const result = await execQuery(builder, mockEngine, sources);
+
+      const rows = [];
+      for await (const row of result) {
+        rows.push(row);
+      }
+
+      expect(rows).toHaveLength(2);
+      expect(rows[0].get('name')?.value).toBe('Alice');
+      expect(rows[1].get('age')?.value).toBe('30');
+    });
+
+    it('クエリを実行し、Variableキーを持つバインディングを処理する', async () => {
+      // Variableオブジェクトをキーに持つモックデータを準備
+      const nameVar = v('name');
+      const ageVar = v('age');
+      const mockBindings = [
+        new Map([[nameVar, { termType: 'Literal', value: 'Alice' }]]),
+        new Map([[ageVar, { termType: 'Literal', value: '30' }]]),
+      ];
+
+      const mockStream = (async function* () {
+        for (const binding of mockBindings) {
+          yield binding;
+        }
+      })();
+
+      mockQueryBindings.mockResolvedValue(mockStream);
+
+      const builder = new SparqlBuilder()
+        .selectVars([v('name'), v('age')])
+        .whereTriple(v('person'), iri('http://example.org/name'), v('name'));
+
+      const sources = ['http://example.org/data.ttl'];
+      const result = await execQuery(builder, mockEngine, sources);
+
+      const rows = [];
+      for await (const row of result) {
+        rows.push(row);
+      }
+
+      expect(rows).toHaveLength(2);
+      expect(rows[0].get('name')?.value).toBe('Alice');
+      expect(rows[1].get('age')?.value).toBe('30');
+    });
+
     it('クエリ実行エラーを適切に処理する', async () => {
       mockQueryBindings.mockRejectedValue(new Error('Query failed'));
 
@@ -70,6 +135,17 @@ describe('executor', () => {
       await expect(execQuery(builder, mockEngine, sources))
         .rejects
         .toThrow('SPARQL query execution failed: Query failed');
+    });
+
+    it('非Errorオブジェクトのエラーを適切に処理する', async () => {
+      mockQueryBindings.mockRejectedValue('String error');
+
+      const builder = new SparqlBuilder().selectVars([v('x')]);
+      const sources = ['http://example.org/data.ttl'];
+
+      await expect(execQuery(builder, mockEngine, sources))
+        .rejects
+        .toThrow('SPARQL query execution failed: String error');
     });
   });
 
@@ -100,6 +176,17 @@ describe('executor', () => {
       expect(rows).toHaveLength(2);
       expect(rows[0].get('id')?.value).toBe('http://example.org/person1');
       expect(rows[1].get('id')?.value).toBe('http://example.org/person2');
+    });
+
+    it('collectRowsでクエリ実行エラーが発生した場合、エラーを伝播する', async () => {
+      mockQueryBindings.mockRejectedValue(new Error('Query failed'));
+
+      const builder = new SparqlBuilder().selectVars([v('x')]);
+      const sources = ['http://example.org/data.ttl'];
+
+      await expect(collectRows(builder, mockEngine, sources))
+        .rejects
+        .toThrow('SPARQL query execution failed: Query failed');
     });
   });
 });

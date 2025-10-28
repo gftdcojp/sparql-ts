@@ -7,6 +7,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     watch: false,
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'dist/', '**/*.d.ts', '**/*.config.*'],
+    },
   },
   resolve: {
     alias: {

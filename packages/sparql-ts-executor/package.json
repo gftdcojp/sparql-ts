@@ -19,14 +19,15 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@gftdcojp/sparql-ts-builder": "workspace:*",
     "@comunica/query-sparql": "^3.1.0",
+    "@gftdcojp/sparql-ts-builder": "workspace:*",
     "@rdfjs/types": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.0.4",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^4.0.4"
   },
   "files": [
     "dist"

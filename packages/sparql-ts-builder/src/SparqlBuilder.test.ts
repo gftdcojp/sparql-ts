@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { SparqlBuilder } from './SparqlBuilder.js';
-import { iri, v, litStr, XSD } from './terms.js';
+import { iri, v, litStr, litTyped, b, XSD } from './terms.js';
 
 describe('SparqlBuilder', () => {
   describe('基本的なクエリ構築', () => {
@@ -105,6 +105,93 @@ describe('SparqlBuilder', () => {
     it('XSD 定数が利用できる', () => {
       expect(XSD.int.termType).toBe('NamedNode');
       expect(XSD.int.value).toBe('http://www.w3.org/2001/XMLSchema#int');
+    });
+
+    it('litStr() が言語タグ付きリテラルを作成する', () => {
+      const literal = litStr('Hello', 'en');
+
+      expect(literal.termType).toBe('Literal');
+      expect(literal.value).toBe('Hello');
+      expect(literal.language).toBe('en');
+    });
+
+    it('litStr() がデータ型付きリテラルを作成する', () => {
+      const datatype = iri('http://example.org/CustomType');
+      const literal = litStr('test', datatype);
+
+      expect(literal.termType).toBe('Literal');
+      expect(literal.value).toBe('test');
+      expect(literal.datatype).toStrictEqual(datatype);
+    });
+
+    it('litTyped() が型付きリテラルを作成する', () => {
+      const literal = litTyped(42, XSD.int);
+
+      expect(literal.termType).toBe('Literal');
+      expect(literal.value).toBe('42');
+      expect(literal.datatype).toStrictEqual(XSD.int);
+    });
+
+    it('litTyped() が数値から文字列に変換する', () => {
+      const literal = litTyped(true, XSD.boolean);
+
+      expect(literal.termType).toBe('Literal');
+      expect(literal.value).toBe('true');
+      expect(literal.datatype).toStrictEqual(XSD.boolean);
+    });
+
+    it('b() がブランクノードを作成する', () => {
+      const blank = b('test');
+
+      expect(blank.termType).toBe('BlankNode');
+      expect(blank.value).toBe('test');
+    });
+
+    it('b() がラベルなしブランクノードを作成する', () => {
+      const blank = b();
+
+      expect(blank.termType).toBe('BlankNode');
+      expect(blank.value).toBeDefined();
+    });
+  });
+
+  describe('SparqlBuilder 内部メソッド', () => {
+    it('termToSparqlJs() が Literal を変換する', () => {
+      const builder = new SparqlBuilder();
+      const literal = litStr('test', XSD.string);
+
+      const result = (builder as any).termToSparqlJs(literal);
+
+      expect(result).toEqual({
+        termType: 'Literal',
+        value: 'test',
+        language: '',
+        datatype: {
+          termType: 'NamedNode',
+          value: 'http://www.w3.org/2001/XMLSchema#string',
+        },
+      });
+    });
+
+    it('termToSparqlJs() が BlankNode を変換する', () => {
+      const builder = new SparqlBuilder();
+      const blank = b('test');
+
+      const result = (builder as any).termToSparqlJs(blank);
+
+      expect(result).toEqual({
+        termType: 'BlankNode',
+        value: 'test',
+      });
+    });
+
+    it('termToSparqlJs() が未知のtermTypeでエラーを投げる', () => {
+      const builder = new SparqlBuilder();
+      const invalidTerm = { termType: 'Invalid' as any, value: 'test' };
+
+      expect(() => (builder as any).termToSparqlJs(invalidTerm)).toThrow(
+        'Unsupported term type: Invalid'
+      );
     });
   });
 });

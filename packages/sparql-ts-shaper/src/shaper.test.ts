@@ -119,5 +119,80 @@ describe('shaper', () => {
         age: 25,
       });
     });
+
+    it('OutputSpecが未設定の場合はエラーを投げる', async () => {
+      const builder = new SparqlBuilder();
+      const row = new Map();
+
+      await expect(shapeAndMapOne(builder, row))
+        .rejects
+        .toThrow('OutputSpec must be set on SparqlBuilder before calling shapeAndMapOne');
+    });
+
+    it('focusNodeVarが見つからない場合はエラーを投げる', async () => {
+      const spec = {
+        shape: 'http://example.org/PersonShape',
+        focusNodeVar: 'id', // この変数が存在しない
+        buildQuads: vi.fn(() => []),
+        mapToObject: vi.fn(() => ({})),
+      };
+
+      const builder = new SparqlBuilder().setOutputSpec(spec);
+
+      const row = new Map([
+        ['name', { termType: 'Literal', value: 'Alice' }],
+        // 'id' が存在しない
+      ]);
+
+      await expect(shapeAndMapOne(builder, row))
+        .rejects
+        .toThrow("focusNodeVar 'id' not found in binding row");
+    });
+  });
+
+  describe('runTypedQuery', () => {
+    it('クエリ構築・実行・検証・マッピングを一括で行う', async () => {
+      // execQueryのモック
+      const mockExecQuery = vi.fn();
+      vi.doMock('@gftdcojp/sparql-ts-executor', () => ({
+        execQuery: mockExecQuery,
+      }));
+
+      const { runTypedQuery } = await import('./shaper.js');
+
+      mockValidateQuadsWithShape.mockResolvedValue(undefined);
+
+      const spec = {
+        shape: 'http://example.org/PersonShape',
+        focusNodeVar: 'id',
+        buildQuads: vi.fn(() => []),
+        mapToObject: vi.fn((binding) => ({
+          id: binding.get('id')?.value,
+          name: binding.get('name')?.value,
+        })),
+      };
+
+      const builder = new SparqlBuilder().setOutputSpec(spec);
+
+      const mockRows = (async function* () {
+        yield new Map([
+          ['id', { termType: 'NamedNode', value: 'http://example.org/person1' }],
+          ['name', { termType: 'Literal', value: 'Alice' }],
+        ]);
+      })();
+
+      mockExecQuery.mockResolvedValue(mockRows);
+
+      const mockEngine = {};
+      const sources = ['http://example.org/data.ttl'];
+
+      const result = await runTypedQuery(builder, mockEngine as any, sources);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: 'http://example.org/person1',
+        name: 'Alice',
+      });
+    });
   });
 });

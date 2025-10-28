@@ -27,8 +27,9 @@
     "@types/n3": "^1.26.1",
     "@types/node": "^22.0.0",
     "@types/sparqljs": "^3.1.7",
+    "@vitest/coverage-v8": "^4.0.4",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^4.0.4"
   },
   "files": [
     "dist"
