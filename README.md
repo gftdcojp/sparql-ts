@@ -4,11 +4,12 @@ A TypeScript family for safely building, executing SPARQL queries against RDF da
 
 ## Overview
 
-`sparql-ts` is a collection of TypeScript libraries that support application development with RDF data. It consists of three packages:
+`sparql-ts` is a collection of TypeScript libraries that support application development with RDF data. It consists of four packages:
 
 - **[@gftdcojp/sparql-ts-builder](./packages/sparql-ts-builder/)**: Type-safe SPARQL query building
 - **[@gftdcojp/sparql-ts-executor](./packages/sparql-ts-executor/)**: SPARQL query execution with @gftdcojp/grapher
 - **[@gftdcojp/sparql-ts-shaper](./packages/sparql-ts-shaper/)**: SHACL validation and DTO mapping
+- **[@gftdcojp/sparql-ts-server](./packages/sparql-ts-server/)**: Zod-only, type-safe SPARQL HTTP endpoint with Next.js/Remix adapters
 
 Each package has clear separation of responsibilities and is designed based on SOLID principles.
 
@@ -55,11 +56,10 @@ The executor automatically detects engine availability and uses the appropriate 
           |-------------------------------------|
           | - SparqlBuilder                     |
           | - RDF Term helpers (iri, v, etc)    |
-          | - .toString()                       |
+          | - .toString() / toSparqlAst()       |
           | - setOutputSpec()/getOutputSpec()   |
           +-------------------------+-----------+
                                     |
-                                    | (uses builder for query & spec)
                                     v
           +-------------------------------------+
           | @gftdcojp/sparql-ts-executor        |
@@ -69,16 +69,22 @@ The executor automatically detects engine availability and uses the appropriate 
           | => AsyncIterable<BindingRow>        |
           +-------------------------+-----------+
                                     |
-                                    | (BindingRow + builder.getOutputSpec())
                                     v
           +-------------------------------------+
           | @gftdcojp/sparql-ts-shaper          |
           |-------------------------------------|
-          | - shapeAndMapAll(builder, rows)     |
-          |   1) buildQuads(row)                |
-          |   2) SHACL validate (resourcebox)   |
-          |   3) mapToObject(row) => DTO        |
-          | => Promise<T[]> (reliable array)    |
+          | - shapeAndMapAll/One(...)           |
+          |   buildQuads → SHACL → DTO          |
+          +-------------------------+-----------+
+                                    |
+                                    v
+          +-------------------------------------+
+          | @gftdcojp/sparql-ts-server          |
+          |-------------------------------------|
+          | - createSparqlServer()              |
+          | - adapters/next, adapters/remix     |
+          | - Zod-only request/response schema  |
+          | - namespace/quad-based auth hooks   |
           +-------------------------------------+
 ```
 
@@ -86,13 +92,13 @@ The executor automatically detects engine availability and uses the appropriate 
 
 ```bash
 # npm
-npm install @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
+npm install @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper @gftdcojp/sparql-ts-server
 
 # pnpm
-pnpm add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
+pnpm add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper @gftdcojp/sparql-ts-server
 
 # yarn
-yarn add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper
+yarn add @gftdcojp/sparql-ts-builder @gftdcojp/sparql-ts-executor @gftdcojp/sparql-ts-shaper @gftdcojp/sparql-ts-server
 ```
 
 ## Basic Usage Example
@@ -169,6 +175,45 @@ const sparqlResult = await grapher.query('sparql', `
 await grapher.disconnect();
 ```
 
+## Server Usage (Next.js App Router)
+
+```ts
+// app/api/sparql/route.ts
+import { nextRouteHandler } from '@gftdcojp/sparql-ts-server/adapters/next';
+import { registry } from '@/sparql/registry';
+
+export const { POST } = nextRouteHandler({
+  registry,
+  // authorizeOperation: async ({ usedIris, prefixes, ctx, operation, params }) => { /* namespace allowlist */ },
+  // authorizeRow: async ({ quads, row, ctx }) => { /* quad-based ABAC/RBAC */ },
+});
+```
+
+## Server Usage (Remix)
+
+```ts
+// app/routes/api.sparql.ts
+import { remixAction } from '@gftdcojp/sparql-ts-server/adapters/remix';
+import { registry } from '~/sparql/registry';
+
+export const action = remixAction({ registry });
+```
+
+## Authorization Hooks (namespace / quad)
+
+- **authorizeOperation(input)**: クエリ AST 解析結果（`usedIris`, `prefixes`）から語彙 namespace を制約。
+- **authorizeRow(input)**: 各行に対する `buildQuads(row)` の `quads` を用いて述語/グラフ単位で制御。
+
+テンプレート（例）: `packages/sparql-ts-server/examples/policies.ts`
+
+## Clerk v6 Integration (example)
+
+Next.js で Clerk の `auth()` を await し、`ctx.userId`/`ctx.tenantId` を注入してから認可を実行できます。
+
+例: `packages/sparql-ts-server/examples/next-clerk.ts`
+
+## Package Details
+
 ## Package Details
 
 ### @gftdcojp/sparql-ts-builder
@@ -195,6 +240,25 @@ Provides SHACL validation and DTO mapping of query results.
 **Main APIs:**
 - `shapeAndMapAll(builder, rows)`: Validation and mapping of all results
 - `shapeAndMapOne(builder, row)`: Validation and mapping of single result
+
+### @gftdcojp/sparql-ts-server
+
+Zod のみを依存とする Fetch API 互換の SPARQL HTTP サーバ。Next.js/Remix アダプタを提供。
+
+**Main APIs:**
+- `createSparqlServer({ registry, authorizeOperation?, authorizeRow?, engine?, sources? })`
+- `adapters/next`: `nextRouteHandler(options)` → `{ POST }`
+- `adapters/remix`: `remixAction(options)` → `ActionFunction`
+
+## Testing & Coverage
+
+```bash
+# Run tests with coverage (server package)
+pnpm -w -F @gftdcojp/sparql-ts-server test -- --coverage
+
+# Coverage thresholds
+# packages/sparql-ts-server/vitest.config.ts enforces 100% (statements/branches/functions/lines)
+```
 
 ## Development
 
