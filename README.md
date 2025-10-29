@@ -48,6 +48,11 @@ This project uses **@gftdcojp/grapher** as the default query engine, with **Comu
 
 The executor automatically detects engine availability and uses the appropriate one.
 
+## Recommended Backends
+
+- **@gftdcojp/grapher**: 推奨デフォルト。ユニバーサルなグラフクエリエンジン（GraphQL/ISO GQL/Cypher/SPARQL/Gremlin）で、Turso/IndexedDB/DuckDB をサポート。ローカル/エッジ/分析用途までゼロ設定で動作します。リンク: [npm:@gftdcojp/grapher](https://www.npmjs.com/package/@gftdcojp/grapher)
+- **Amazon Neptune (SPARQL 1.1)**: マネージド RDF/Property Graph データベース。SPARQL エンドポイントを提供し、クラウド本番バックエンドとして推奨。利用時は Comunica エンジン経由で SPARQL エンドポイント URL を `sources` に指定してください（例: `{ type: 'sparql', value: 'https://<neptune-endpoint>:<port>/sparql' }`）。リンク: [Neptune SPARQL ドキュメント](https://docs.aws.amazon.com/neptune/latest/userguide/neptune-sparql.html)
+
 ## Architecture
 
 ```
