@@ -1,0 +1,47 @@
+{
+  "name": "@gftdcojp/sparql-ts-server",
+  "version": "0.1.0",
+  "description": "型安全なSPARQLエンドポイント（Zodのみ依存）を提供するサーバーパッケージ。Next.js/Remixアダプタ付き",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./adapters/next": {
+      "types": "./dist/adapters/next.d.ts",
+      "import": "./dist/adapters/next.js"
+    },
+    "./adapters/remix": {
+      "types": "./dist/adapters/remix.d.ts",
+      "import": "./dist/adapters/remix.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "@gftdcojp/sparql-ts-builder": "workspace:*",
+    "@gftdcojp/sparql-ts-executor": "workspace:*",
+    "@gftdcojp/sparql-ts-shaper": "workspace:*",
+    "@rdfjs/types": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.0.4",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.4"
+  },
+  "files": [
+    "dist"
+  ]
+}
+
+

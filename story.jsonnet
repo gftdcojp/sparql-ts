@@ -20,7 +20,7 @@
       "@type": "process:Project",
       "process:name": "sparql-ts Monorepo",
       "process:description": "RDFデータソースに対してSPARQLクエリを安全に組み立て、実行し、SHACL準拠のアプリケーション向けオブジェクトとして受け取るためのTypeScriptファミリー",
-      "process:dependencies": ["builder:package", "executor:package", "shaper:package"],
+      "process:dependencies": ["builder:package", "executor:package", "shaper:package", "server:package"],
       "process:architecture": {
         "@type": "process:LayeredArchitecture",
         "process:layers": [
@@ -116,6 +116,25 @@
       }
     },
 
+    // Server Package
+    {
+      "@id": "server:package",
+      "@type": "process:Package",
+      "process:name": "@gftdcojp/sparql-ts-server",
+      "process:purpose": "型安全なSPARQLエンドポイント（Zodのみ）とNext/Remixアダプタを提供",
+      "process:exports": [
+        "createSparqlServer",
+        "adapters/next",
+        "adapters/remix"
+      ],
+      "process:dependencies": [
+        "@gftdcojp/sparql-ts-builder",
+        "@gftdcojp/sparql-ts-executor",
+        "@gftdcojp/sparql-ts-shaper",
+        "zod"
+      ]
+    },
+
     // プロセスネットワークの実行順序（トポロジカルソート）
     {
       "@id": "sparql:execution-order",
@@ -124,6 +143,7 @@
         "builder:package",
         "executor:package",
         "shaper:package",
+        "server:package",
         "sparql:integration-test"
       ]
     },
