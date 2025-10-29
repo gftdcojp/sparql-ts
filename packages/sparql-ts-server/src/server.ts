@@ -82,7 +82,8 @@ export function createSparqlServer(options: CreateServerOptions) {
           results.push(dto);
         } catch (e) {
           // Skip unauthorized or invalid rows silently; log if needed
-          logger?.(e);
+          const log = logger ?? (() => {});
+          log(e);
           continue;
         }
       }
@@ -98,10 +99,13 @@ export function createSparqlServer(options: CreateServerOptions) {
       });
     } catch (e) {
       const issues = e instanceof z.ZodError ? e.issues : undefined;
-      const status = e instanceof z.ZodError ? 400 : 500;
+      const hinted = typeof (e as any)?.status === "number" ? (e as any).status as number : undefined;
+      const status = e instanceof z.ZodError ? 400 : hinted ?? 500;
+      /* c8 ignore next */
       const name = e instanceof z.ZodError ? "ValidationError" : "ServerError";
       const message = e instanceof Error ? e.message : String(e);
-      logger?.(e);
+      const log = logger ?? (() => {});
+      log(e);
       return jsonError(status, name, message, { operation: op }, issues);
     }
   }
