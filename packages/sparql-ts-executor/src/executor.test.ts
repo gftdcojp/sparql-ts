@@ -3,43 +3,42 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { QueryEngine } from '@comunica/query-sparql';
+import { createGrapher } from '@gftdcojp/grapher/quick-start';
 import { execQuery, collectRows } from './executor.js';
 import { SparqlBuilder } from '@gftdcojp/sparql-ts-builder';
 import { iri, v } from '@gftdcojp/sparql-ts-builder';
 
-// Comunicaのモック
-vi.mock('@comunica/query-sparql', () => ({
-  QueryEngine: vi.fn(),
+// @gftdcojp/grapherのモック
+vi.mock('@gftdcojp/grapher/quick-start', () => ({
+  createGrapher: vi.fn(),
 }));
 
 describe('executor', () => {
   let mockEngine: any;
-  let mockQueryBindings: any;
+  let mockQuery: any;
 
   beforeEach(() => {
-    mockQueryBindings = vi.fn();
+    mockQuery = vi.fn();
     mockEngine = {
-      queryBindings: mockQueryBindings,
+      query: mockQuery,
     };
+
+    // createGrapherのモックをリセット
+    vi.mocked(createGrapher).mockResolvedValue(mockEngine);
   });
 
   describe('execQuery', () => {
     it('クエリを実行し、AsyncIterable<BindingRow>を返す', async () => {
-      // モックデータの準備
-      const mockBindings = [
-        new Map([['name', { termType: 'Literal', value: 'Alice' }]]),
-        new Map([['name', { termType: 'Literal', value: 'Bob' }]]),
-      ];
+      // @gftdcojp/grapherのExecutionResult形式のモックデータを準備
+      const mockResult = {
+        data: [
+          { name: 'Alice' },
+          { name: 'Bob' },
+        ],
+        metadata: { queryType: 'SELECT' },
+      };
 
-      // AsyncIterableを模擬
-      const mockStream = (async function* () {
-        for (const binding of mockBindings) {
-          yield binding;
-        }
-      })();
-
-      mockQueryBindings.mockResolvedValue(mockStream);
+      mockQuery.mockResolvedValue(mockResult);
 
       // テスト実行
       const builder = new SparqlBuilder()
@@ -61,19 +60,16 @@ describe('executor', () => {
     });
 
     it('クエリを実行し、stringキーを持つバインディングを処理する', async () => {
-      // stringキーのモックデータを準備
-      const mockBindings = [
-        new Map([['name', { termType: 'Literal', value: 'Alice' }]]),
-        new Map([['age', { termType: 'Literal', value: '30' }]]),
-      ];
+      // @gftdcojp/grapherのExecutionResult形式のモックデータを準備
+      const mockResult = {
+        data: [
+          { name: 'Alice' },
+          { age: '30' },
+        ],
+        metadata: { queryType: 'SELECT' },
+      };
 
-      const mockStream = (async function* () {
-        for (const binding of mockBindings) {
-          yield binding;
-        }
-      })();
-
-      mockQueryBindings.mockResolvedValue(mockStream);
+      mockQuery.mockResolvedValue(mockResult);
 
       const builder = new SparqlBuilder()
         .selectVars([v('name'), v('age')])
@@ -93,21 +89,16 @@ describe('executor', () => {
     });
 
     it('クエリを実行し、Variableキーを持つバインディングを処理する', async () => {
-      // Variableオブジェクトをキーに持つモックデータを準備
-      const nameVar = v('name');
-      const ageVar = v('age');
-      const mockBindings = [
-        new Map([[nameVar, { termType: 'Literal', value: 'Alice' }]]),
-        new Map([[ageVar, { termType: 'Literal', value: '30' }]]),
-      ];
+      // @gftdcojp/grapherのExecutionResult形式のモックデータを準備
+      const mockResult = {
+        data: [
+          { name: 'Alice' },
+          { age: '30' },
+        ],
+        metadata: { queryType: 'SELECT' },
+      };
 
-      const mockStream = (async function* () {
-        for (const binding of mockBindings) {
-          yield binding;
-        }
-      })();
-
-      mockQueryBindings.mockResolvedValue(mockStream);
+      mockQuery.mockResolvedValue(mockResult);
 
       const builder = new SparqlBuilder()
         .selectVars([v('name'), v('age')])
@@ -127,7 +118,7 @@ describe('executor', () => {
     });
 
     it('クエリ実行エラーを適切に処理する', async () => {
-      mockQueryBindings.mockRejectedValue(new Error('Query failed'));
+      mockQuery.mockRejectedValue(new Error('Query failed'));
 
       const builder = new SparqlBuilder().selectVars([v('x')]);
       const sources = ['http://example.org/data.ttl'];
@@ -138,7 +129,7 @@ describe('executor', () => {
     });
 
     it('非Errorオブジェクトのエラーを適切に処理する', async () => {
-      mockQueryBindings.mockRejectedValue('String error');
+      mockQuery.mockRejectedValue('String error');
 
       const builder = new SparqlBuilder().selectVars([v('x')]);
       const sources = ['http://example.org/data.ttl'];
@@ -151,19 +142,16 @@ describe('executor', () => {
 
   describe('collectRows', () => {
     it('全ての行を配列として収集する', async () => {
-      // モックデータの準備
-      const mockBindings = [
-        new Map([['id', { termType: 'NamedNode', value: 'http://example.org/person1' }]]),
-        new Map([['id', { termType: 'NamedNode', value: 'http://example.org/person2' }]]),
-      ];
+      // @gftdcojp/grapherのExecutionResult形式のモックデータを準備
+      const mockResult = {
+        data: [
+          { id: 'http://example.org/person1' },
+          { id: 'http://example.org/person2' },
+        ],
+        metadata: { queryType: 'SELECT' },
+      };
 
-      const mockStream = (async function* () {
-        for (const binding of mockBindings) {
-          yield binding;
-        }
-      })();
-
-      mockQueryBindings.mockResolvedValue(mockStream);
+      mockQuery.mockResolvedValue(mockResult);
 
       // テスト実行
       const builder = new SparqlBuilder()
@@ -179,7 +167,7 @@ describe('executor', () => {
     });
 
     it('collectRowsでクエリ実行エラーが発生した場合、エラーを伝播する', async () => {
-      mockQueryBindings.mockRejectedValue(new Error('Query failed'));
+      mockQuery.mockRejectedValue(new Error('Query failed'));
 
       const builder = new SparqlBuilder().selectVars([v('x')]);
       const sources = ['http://example.org/data.ttl'];

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@comunica/query-sparql": "^3.1.0",
+    "@gftdcojp/grapher": "^0.1.3",
     "@gftdcojp/sparql-ts-builder": "workspace:*",
     "@rdfjs/types": "^1.1.0"
   },
